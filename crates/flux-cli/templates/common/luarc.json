@@ -1,0 +1,6 @@
+{
+  "runtime.version": "Lua 5.4",
+  "workspace.library": ["./flux.d.lua"],
+  "diagnostics.globals": ["flux", "main"],
+  "workspace.checkThirdParty": false
+}
