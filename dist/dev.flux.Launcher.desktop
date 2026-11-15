@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Flux
+GenericName=Launcher
+Comment=Extensible launcher
+Exec=flux toggle
+Icon=dev.flux.Launcher
+Terminal=false
+Categories=Utility;
+Keywords=launcher;run;search;
+StartupNotify=false

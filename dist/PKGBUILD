@@ -1,0 +1,60 @@
+# Maintainer: Flux contributors
+#
+# Source archives come from `dist/make-source.sh` (deterministic). Typical use:
+#   cd dist && ./make-source.sh out && cp out/*.tar.gz . && makepkg -f --skipchecksums   # first time
+# then paste the printed sha256 values below. The build is fully offline (vendored dependencies).
+pkgname=flux-launcher
+pkgver=0.1.0
+pkgrel=1
+pkgdesc='Extensible launcher with sandboxed Lua extensions'
+arch=('x86_64')
+url='https://example.invalid/flux'
+license=('custom')
+depends=('wl-clipboard' 'xdg-desktop-portal' 'vulkan-icd-loader' 'fontconfig' 'libxkbcommon' 'libxcb' 'wayland')
+optdepends=('gnome-keyring: Secret Service for secure storage (or any other provider)'
+            'systemd: per-extension memory and CPU limits'
+            'xdg-desktop-portal-hyprland: global shortcut and file chooser on Hyprland')
+makedepends=('cargo' 'pkgconf')
+install=flux-launcher.install
+source=("$pkgname-$pkgver.tar.gz"
+        "$pkgname-vendor-$pkgver.tar.gz")
+sha256sums=('SKIP' 'SKIP')   # replace with the values printed by dist/make-source.sh
+options=('!lto' '!debug' '!strip')   # LTO is configured in Cargo.toml; the profile strips symbols itself
+
+prepare() {
+  # vendor/ and .cargo/config.toml come from the second archive and are unpacked on top of the first one
+  cd "$srcdir/$pkgname-$pkgver"
+  [ -d vendor ] || { echo "vendor/ is missing: extract $pkgname-vendor-$pkgver.tar.gz" >&2; return 1; }
+}
+
+_flags() {
+  export CARGO_HOME="$srcdir/cargo-home" CARGO_TARGET_DIR="$srcdir/target" CARGO_INCREMENTAL=0
+  export CONST_RANDOM_SEED="$pkgname-$pkgver"   # otherwise const-random (via ahash) embeds a new random seed per build
+  export RUSTFLAGS="--remap-path-prefix=$srcdir=/build --remap-path-prefix=$CARGO_HOME=/cargo"
+  export CFLAGS="${CFLAGS:-} -ffile-prefix-map=$srcdir=/build" CXXFLAGS="${CXXFLAGS:-} -ffile-prefix-map=$srcdir=/build"
+}
+
+build() {
+  cd "$srcdir/$pkgname-$pkgver"
+  _flags
+  cargo build --release --locked --frozen --offline -p flux
+}
+
+check() {
+  cd "$srcdir/$pkgname-$pkgver"
+  _flags
+  # the pure crates; the runtime/host tests need Landlock and a systemd user session, so they are not run in a chroot
+  cargo test --locked --frozen --offline -p flux-api -p flux-cli --lib
+}
+
+package() {
+  cd "$srcdir/$pkgname-$pkgver"
+  install -Dm755 "$srcdir/target/release/flux" "$pkgdir/usr/bin/flux"
+  install -Dm644 dist/dev.flux.Launcher.desktop "$pkgdir/usr/share/applications/dev.flux.Launcher.desktop"
+  install -Dm644 dist/dev.flux.Launcher.svg "$pkgdir/usr/share/icons/hicolor/scalable/apps/dev.flux.Launcher.svg"
+  sed 's|%h/.local/bin|/usr/bin|' dist/flux.service | install -Dm644 /dev/stdin "$pkgdir/usr/lib/systemd/user/flux.service"
+  install -dm755 "$pkgdir/usr/share/flux/extensions"
+  cp -r extensions/. "$pkgdir/usr/share/flux/extensions/"
+  install -dm755 "$pkgdir/usr/share/doc/$pkgname"
+  cp -r docs/. "$pkgdir/usr/share/doc/$pkgname/"
+}
