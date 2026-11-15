@@ -1,0 +1,21 @@
+[package]
+name = "flux-core"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+flux-api = { path = "../flux-api" }
+flux-runtime = { path = "../flux-runtime" }
+rusqlite = { version = "0.41", features = ["bundled"] }
+async-channel = "2"
+anyhow = "1"
+log = "0.4"
+toml = "1.2.1"
+serde_json = "1"
+tempfile = "3"
+pulldown-cmark = { version = "0.13", default-features = false }
+zip = { version = "2", default-features = false, features = ["deflate"] }
+serde = { version = "1.0.229", features = ["derive"] }
+
+[dev-dependencies]
+tokio = { version = "1.54.1", features = ["sync"] }
