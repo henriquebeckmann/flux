@@ -1,0 +1,39 @@
+[workspace]
+members = [".", "crates/flux-api", "crates/flux-core", "crates/flux-runtime", "crates/flux-platform", "crates/flux-cli"]
+resolver = "2"
+
+[package]
+name = "flux"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+flux-api = { path = "crates/flux-api" }
+flux-core = { path = "crates/flux-core" }
+flux-platform = { path = "crates/flux-platform" }
+flux-cli = { path = "crates/flux-cli" }
+flux-runtime = { path = "crates/flux-runtime" }
+serde_json = "1"
+gpui = { git = "https://github.com/zed-industries/zed", rev = "b5cd310b3b", default-features = false, features = ["font-kit", "wayland", "x11"] }
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "b5cd310b3b", default-features = false, features = ["font-kit", "wayland", "x11"] }
+anyhow = "1"
+async-channel = "2"
+log = "0.4"
+env_logger = { version = "0.11", default-features = false, features = ["auto-color", "humantime"] }
+unicode-segmentation = "1.13.3"
+
+# O Zed usa forks de algumas crates; patches de dependências não se propagam, então repetimos aqui.
+[patch.crates-io]
+async-process = { git = "https://github.com/zed-industries/async-process.git", rev = "0b6d6713570af61806e1e5cb40e0f757cb93fd9d" }
+async-task = { git = "https://github.com/zed-industries/async-task.git", rev = "015845a19fc31752c02367567d3b8900a406f9da" }
+calloop = { git = "https://github.com/zed-industries/calloop", rev = "3759371fee14c40066d64777e2a36b6ffcc22590" }
+
+[dev-dependencies]
+tempfile = "3"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = "symbols"
+# extension workers rely on catch_unwind to contain a panic to one extension
+panic = "unwind"
